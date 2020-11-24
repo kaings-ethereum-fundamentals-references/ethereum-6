@@ -51,4 +51,32 @@ contract('People', async function(accounts) {
             instance.deletePerson(accounts[2], { from: accounts[0] })
         );
     });
+
+    it('should increase contract balance when create person', async function() {
+        instance = await People.new();  // create brand new copy of contract
+        await instance.createPerson('Bob', 65, 170, {value: web3.utils.toWei('1', 'ether'), from: accounts[3]});
+        let bal = await web3.eth.getBalance(instance.address);
+        assert.equal(bal, web3.utils.toWei('1', 'ether'), 'each successful create person will add balance to contract');
+    });
+
+    it('should NOT allow non-owner to withdraw balance from contract', async function() {
+        await truffleAssert.fails(
+            instance.withdrawAll({from: accounts[1]}),
+            truffleAssert.REVERT
+        );
+    });
+
+    it('should only allow owner to withdraw balance from contract', async function() {
+        // you can also parse the balance into frm BigNumber to float to avoid error as such
+        // let balanceBfrWithdraw = parseFloat(await web3.eth.getBalance(accounts[0]));
+        let balBfrWithdraw = await web3.eth.getBalance(accounts[0]);
+
+        await truffleAssert.passes(
+            instance.withdrawAll({from: accounts[0]})
+        );
+        
+        let balAftWithdraw = await web3.eth.getBalance(accounts[0]);
+
+        assert(balAftWithdraw > balBfrWithdraw, 'owner account balance should increase in ether');
+    });
 });
